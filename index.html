@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmacia Hogar SPA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <!-- jsPDF para exportar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        .modal-overlay { background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); }
+        .bg-glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
+        @keyframes pulse-red {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+            50% { transform: scale(1.02); box-shadow: 0 0 40px rgba(239, 68, 68, 0.8); }
+        }
+        @keyframes pulse-green {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0px rgba(34, 197, 94, 0.3); }
+            50% { transform: scale(1.01); box-shadow: 0 0 15px rgba(34, 197, 94, 0.6); }
+        }
+        @keyframes pulse-blue {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0px rgba(59, 130, 246, 0.3); }
+            50% { transform: scale(1.01); box-shadow: 0 0 15px rgba(59, 130, 246, 0.6); }
+        }
+        @keyframes alerta-salida {
+            0% { transform: scale(0.8) rotate(-5deg); opacity: 0; }
+            20% { transform: scale(1.1) rotate(3deg); }
+            40% { transform: scale(0.95) rotate(-2deg); }
+            60% { transform: scale(1.05) rotate(1deg); }
+            80% { transform: scale(0.98) rotate(-1deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .alerta-critica { animation: pulse-red 2s infinite; border: 2px solid #ef4444; }
+        .alerta-urgencia { animation: pulse-green 2s infinite; border: 2px solid #22c55e; }
+        .alerta-reponer { animation: pulse-blue 2s infinite; border: 2px solid #3b82f6; }
+        .alerta-salida { animation: alerta-salida 0.8s ease-out; }
+        .shake { animation: shake 0.5s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        .pagination-btn.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .bajo-stock {
+            background: linear-gradient(90deg, #fef3c7 0%, #fde68a 50%, #fbbf24 100%);
+            border-left: 4px solid #f59e0b;
+        }
+        .critico-stock {
+            background: linear-gradient(90deg, #fee2e2 0%, #fecaca 50%, #fca5a5 100%);
+            border-left: 4px solid #ef4444;
+        }
+        .card-gradient-health { background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%); }
+        .card-gradient-warning { background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%); }
+        .card-gradient-danger { background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%); }
+        .card-gradient-info { background: linear-gradient(135deg, #e0e7ff 0%, #a5b4fc 100%); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-gray-900">
+
+    <!-- Landing Page con Login -->
+    <div id="landing" class="fixed inset-0 bg-gradient-to-br from-green-50 to-blue-50 flex flex-col items-center justify-center text-gray-800 z-[9999] p-4">
+        <div class="text-center space-y-8 max-w-md w-full">
+            <div class="space-y-2">
+                <h1 class="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-blue-500">FARMACIA HOGAR</h1>
+                <p class="text-gray-600 text-sm">Gestión inteligente de medicamentos familiares</p>
+            </div>
+
+            <!-- Formulario de Login -->
+            <div id="loginForm" class="bg-white/80 backdrop-blur-sm border border-white/40 rounded-2xl p-8 space-y-6 shadow-2xl">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-user-md text-green-500"></i> ACCESO AL SISTEMA
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-2">Correo Electrónico</label>
+                        <div class="relative">
+                            <i class="fas fa-envelope absolute left-4 top-3.5 text-gray-500"></i>
+                            <input type="email" id="loginEmail" 
+                                placeholder="usuario@ejemplo.com"
+                                class="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-300 rounded-xl text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-2">Contraseña</label>
+                        <div class="relative">
+                            <i class="fas fa-key absolute left-4 top-3.5 text-gray-500"></i>
+                            <input type="password" id="loginPassword" 
+                                placeholder="••••••••"
+                                class="w-full pl-12 pr-12 py-3.5 bg-white border border-gray-300 rounded-xl text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all">
+                            <button type="button" onclick="togglePassword()" class="absolute right-4 top-3.5 text-gray-500 hover:text-gray-800">
+                                <i class="fas fa-eye" id="eyeIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="loginError" class="hidden bg-red-500/20 border border-red-500/30 rounded-xl p-4 text-red-700 text-sm">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span id="errorText">Credenciales incorrectas</span>
+                </div>
+
+                <button onclick="loginUser()" id="loginButton" class="w-full bg-gradient-to-r from-green-600 to-blue-500 hover:from-green-700 hover:to-blue-600 text-white py-4 rounded-xl font-bold text-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-2xl shadow-green-500/30 flex items-center justify-center gap-3">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>INGRESAR AL SISTEMA</span>
+                    <i id="loginSpinner" class="fas fa-spinner fa-spin hidden"></i>
+                </button>
+
+                <div class="text-center pt-4 border-t border-gray-200">
+                    <p class="text-gray-600 text-sm">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Acceso restringido a usuarios autorizados
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido de la Aplicación (oculto inicialmente) -->
+    <div id="appContent" class="hidden opacity-0 transition-opacity duration-1000">
+        <header class="bg-white border-b border-gray-200 p-4 sticky top-0 z-40 shadow-sm">
+            <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="bg-green-600 p-2 rounded-lg text-white">
+                        <i class="fas fa-pills"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-black text-gray-800 tracking-tighter">FARMACIA HOGAR</h1>
+                        <p class="text-xs text-gray-500 flex items-center gap-1" id="userEmailDisplay">
+                            <i class="fas fa-user text-green-500"></i>
+                            <span id="currentUserEmail"></span>
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <div class="relative w-full md:w-64">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        <input type="text" id="searchInput" placeholder="Buscar medicamento..." 
+                            class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:ring-4 focus:ring-green-100 focus:border-green-500 outline-none transition-all">
+                    </div>
+                    
+                    <button onclick="mostrarAlertaSalir()" class="text-gray-600 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50" title="Cerrar sesión">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto p-4 md:p-8">
+            <!-- Tarjetas de Resumen -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-2xl shadow-lg border border-blue-100 p-6 card-gradient-health">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-700 text-sm font-bold uppercase">Total Medicamentos</p>
+                            <p id="totalMedicamentos" class="text-3xl font-black text-blue-600">0</p>
+                            <p class="text-xs text-gray-600 mt-1">Suma de unidades</p>
+                        </div>
+                        <i class="fas fa-capsules text-4xl text-blue-300"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-2xl shadow-lg border border-green-100 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-700 text-sm font-bold uppercase">En Botiquín</p>
+                            <p id="totalBotiquin" class="text-3xl font-black text-green-600">0</p>
+                            <p class="text-xs text-gray-600 mt-1">Medicamentos almacenados</p>
+                        </div>
+                        <i class="fas fa-medkit text-4xl text-green-300"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-2xl shadow-lg border border-red-100 p-6 cursor-pointer hover:bg-red-50 transition-colors" onclick="mostrarProximosVencer()">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-700 text-sm font-bold uppercase">Próximos a Vencer (≤30 días)</p>
+                            <p id="totalProximos" class="text-3xl font-black text-red-600">0</p>
+                            <p class="text-xs text-gray-600 mt-1">Click para ver detalles</p>
+                        </div>
+                        <i class="fas fa-exclamation-triangle text-4xl text-red-300"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-2xl shadow-lg border border-yellow-100 p-6 cursor-pointer hover:bg-yellow-50 transition-colors alerta-reponer" onclick="mostrarMedicamentosReponer()">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-700 text-sm font-bold uppercase">Stock Bajo</p>
+                            <p id="totalReponer" class="text-3xl font-black text-yellow-600">0</p>
+                            <p class="text-xs text-gray-600 mt-1">Click para ver lista</p>
+                        </div>
+                        <i class="fas fa-syringe text-4xl text-yellow-300"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros y Exportar -->
+            <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mb-8">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="flex flex-wrap items-center gap-4 w-full md:w-auto">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Medicamento</label>
+                            <select id="filtroMedicamento" class="w-full md:w-48 px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
+                                <option value="">Todos los medicamentos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                            <select id="filtroCategoria" class="w-full md:w-40 px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
+                                <option value="">Todas las categorías</option>
+                                <option value="Analgésico">Analgésico</option>
+                                <option value="Antibiótico">Antibiótico</option>
+                                <option value="Antiinflamatorio">Antiinflamatorio</option>
+                                <option value="Antipirético">Antipirético</option>
+                                <option value="Antialérgico">Antialérgico</option>
+                                <option value="Digestivo">Digestivo</option>
+                                <option value="Cardiovascular">Cardiovascular</option>
+                                <option value="Dermatológico">Dermatológico</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+                            <select id="filtroUbicacion" class="w-full md:w-32 px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
+                                <option value="">Todas las ubicaciones</option>
+                                <option value="Botiquín">Botiquín</option>
+                                <option value="Refrigerador">Refrigerador</option>
+                                <option value="Mueble baño">Mueble baño</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <button onclick="aplicarFiltros()" class="mt-6 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg font-bold transition-colors">
+                            <i class="fas fa-filter mr-2"></i>Filtrar
+                        </button>
+                        <button onclick="limpiarFiltros()" class="mt-6 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2.5 rounded-lg font-bold transition-colors">
+                            <i class="fas fa-times mr-2"></i>Limpiar
+                        </button>
+                    </div>
+                    <button onclick="exportarPDF()" class="mt-4 md:mt-0 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-colors shadow-lg shadow-blue-200">
+                        <i class="fas fa-file-pdf mr-2"></i>Exportar a PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabla de Medicamentos -->
+            <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-green-800 text-white">
+                            <tr class="text-left text-xs uppercase tracking-widest">
+                                <th class="px-6 py-4">Medicamento</th>
+                                <th class="px-6 py-4">Cant.</th>
+                                <th class="px-6 py-4">Categoría</th>
+                                <th class="px-6 py-4">Vencimiento</th>
+                                <th class="px-6 py-4">Ubicación</th>
+                                <th class="px-6 py-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="medicamentoTableBody" class="divide-y divide-gray-100 text-gray-700">
+                            <!-- Los medicamentos se cargarán aquí desde Firebase -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Paginación -->
+                <div class="bg-gray-50 px-6 py-4 flex flex-col md:flex-row items-center justify-between border-t border-gray-200">
+                    <div class="text-sm text-gray-700 mb-4 md:mb-0">
+                        Mostrando <span id="paginacionDesde">0</span> a <span id="paginacionHasta">0</span> de <span id="paginacionTotal">0</span> medicamentos
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="cambiarPagina('prev')" id="paginaAnterior" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        
+                        <div id="paginacionNumeros" class="flex gap-1">
+                            <!-- Números de página se generan aquí -->
+                        </div>
+                        
+                        <button onclick="cambiarPagina('next')" id="paginaSiguiente" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        
+                        <select id="paginacionSelector" onchange="cambiarPagina(this.value)" class="ml-4 px-2 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="10">10 por página</option>
+                            <option value="25">25 por página</option>
+                            <option value="50">50 por página</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <button onclick="openModal('modalRegistro')" class="fixed bottom-8 right-8 bg-green-600 hover:bg-green-700 text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center text-2xl transition-all hover:scale-110 active:rotate-90 z-40">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+
+    <!-- Modal de Registro/Edición de Medicamento -->
+    <div id="modalRegistro" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-[100] p-4">
+        <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="bg-green-900 p-6 text-white flex justify-between items-center">
+                <h2 class="font-bold flex items-center gap-2"><i class="fas fa-pills text-green-400"></i><span id="modalTitulo">NUEVO MEDICAMENTO</span></h2>
+                <button onclick="cerrarModalRegistro()" class="text-2xl hover:text-red-400">&times;</button>
+            </div>
+            <form id="medicamentoForm" class="p-8 grid grid-cols-2 gap-4">
+                <input type="hidden" id="medicamentoId">
+                <div class="col-span-2">
+                    <label class="text-xs font-bold text-gray-400 uppercase">Nombre del Medicamento</label>
+                    <input type="text" id="nombre" class="w-full border-b-2 py-2 outline-none focus:border-green-500" required>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase">Cantidad</label>
+                    <input type="number" id="cantidad" class="w-full border-b-2 py-2 outline-none focus:border-green-500" required>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase">Categoría</label>
+                    <select id="categoria" class="w-full border-b-2 py-2 outline-none focus:border-green-500">
+                        <option value="Analgésico">Analgésico</option>
+                        <option value="Antibiótico">Antibiótico</option>
+                        <option value="Antiinflamatorio">Antiinflamatorio</option>
+                        <option value="Antipirético">Antipirético</option>
+                        <option value="Antialérgico">Antialérgico</option>
+                        <option value="Digestivo">Digestivo</option>
+                        <option value="Cardiovascular">Cardiovascular</option>
+                        <option value="Dermatológico">Dermatológico</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs font-bold text-gray-400 uppercase">Principio Activo</label>
+                    <input type="text" id="principioActivo" class="w-full border-b-2 py-2 outline-none focus:border-green-500">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-red-500 uppercase">F. Vencimiento</label>
+                    <input type="date" id="vencimiento" class="w-full border-b-2 py-2 outline-none focus:border-red-500 text-red-600 font-bold" required>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase">Ubicación</label>
+                    <select id="ubicacion" class="w-full border-b-2 py-2 outline-none focus:border-green-500">
+                        <option value="Botiquín">Botiquín</option>
+                        <option value="Refrigerador">Refrigerador</option>
+                        <option value="Mueble baño">Mueble baño</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs font-bold text-gray-400 uppercase">Farmacia de Compra</label>
+                    <select id="farmacia" class="w-full border-b-2 py-2 outline-none focus:border-green-500">
+                        <option>Farmacia Central</option>
+                        <option>Farmacia del Pueblo</option>
+                        <option>Farmacia Salud</option>
+                        <option>Farmacia 24hs</option>
+                        <option>Farmacia Online</option>
+                        <option>Otro</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase">F. Compra</label>
+                    <input type="date" id="fechaCompra" class="w-full border-b-2 py-2 outline-none focus:border-green-500">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase">Precio Pagado ($)</label>
+                    <input type="number" step="0.01" id="precio" class="w-full border-b-2 py-2 outline-none focus:border-green-600 font-bold">
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs font-bold text-gray-400 uppercase">Instrucciones/Notas</label>
+                    <textarea id="notas" rows="2" class="w-full border-b-2 py-2 outline-none focus:border-green-500"></textarea>
+                </div>
+                <button type="submit" id="btnGuardar" class="col-span-2 bg-green-600 text-white py-4 rounded-2xl font-black mt-4 hover:bg-green-700 transition shadow-lg shadow-green-200">GUARDAR MEDICAMENTO</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Detalle Medicamento -->
+    <div id="modalDetalle" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-[200] p-4">
+        <div class="bg-gray-900 text-white rounded-[2rem] w-full max-w-md overflow-hidden border border-white/10 shadow-3xl">
+            <div id="detalleBanner" class="p-8 text-center bg-green-600 relative">
+                <button onclick="closeModalDetalle()" class="absolute top-4 right-6 text-2xl text-white/50 hover:text-white">&times;</button>
+                <div class="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-capsules text-3xl"></i>
+                </div>
+                <h2 id="detNombre" class="text-3xl font-black uppercase tracking-tighter italic">Nombre Medicamento</h2>
+                <p id="detCategoria" class="text-green-100 text-sm font-bold opacity-80 mt-1 uppercase"></p>
+            </div>
+            
+            <div class="p-8 space-y-6">
+                <div class="text-center">
+                    <p class="text-[10px] text-gray-400 font-bold tracking-[0.3em] mb-4 uppercase">Tiempo hasta caducidad</p>
+                    <div id="detCrono" class="grid grid-cols-4 gap-2">
+                        <!-- Cronómetro se llenará dinámicamente -->
+                    </div>
+                </div>
+
+                <hr class="border-white/5">
+
+                <div class="grid grid-cols-2 gap-6 text-sm">
+                    <div>
+                        <p class="text-gray-500 font-bold text-[10px] uppercase">Vencimiento</p>
+                        <p id="detVenc" class="text-red-400 font-mono text-lg font-bold"></p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 font-bold text-[10px] uppercase">Cantidad</p>
+                        <p id="detCant" class="text-white text-lg font-bold"></p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 font-bold text-[10px] uppercase">Principio Activo</p>
+                        <p id="detPrincipioActivo" class="text-gray-300"></p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 font-bold text-[10px] uppercase">Precio</p>
+                        <p id="detPrecio" class="text-green-400 font-bold text-lg"></p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6 text-sm">
+                    <div>
+                        <p class="text-gray-500 font-bold text-[10px] uppercase">Farmacia</p>
+                        <p id="detFarmacia" class="text-gray-300"></p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 font-bold text-[10px] uppercase">Ubicación</p>
+                        <p id="detUbicacion" class="text-blue-400 font-bold"></p>
+                    </div>
+                </div>
+                
+                <div class="bg-white/5 rounded-2xl p-4">
+                    <p class="text-gray-500 font-bold text-[10px] uppercase mb-2">Instrucciones/Notas</p>
+                    <p id="detNotas" class="text-gray-300 text-sm"></p>
+                </div>
+                
+                <div class="bg-white/5 rounded-2xl p-4 flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 font-bold text-[10px] uppercase">Fecha de Compra</p>
+                        <p id="detFechaCompra" class="text-gray-300 text-xs"></p>
+                    </div>
+                    <i class="fas fa-receipt text-gray-700 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Alerta Vencimientos -->
+    <div id="modalAlerta" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-[300] p-4">
+        <div class="bg-red-600 text-white rounded-[2.5rem] w-full max-w-xs p-8 text-center alerta-critica">
+            <i class="fas fa-radiation text-6xl mb-4"></i>
+            <h2 class="text-2xl font-black mb-2 uppercase">¡ALERTA CRÍTICA!</h2>
+            <p class="text-red-100 text-sm mb-6">Los siguientes medicamentos vencerán en menos de 7 días:</p>
+            <div id="listaCritica" class="bg-black/20 rounded-2xl p-4 text-left space-y-2 mb-8 max-h-40 overflow-y-auto font-bold text-sm">
+                <!-- Lista de medicamentos críticos -->
+            </div>
+            <button onclick="closeModal('modalAlerta')" class="w-full bg-white text-red-600 py-4 rounded-full font-black uppercase shadow-2xl">Revisar Farmacia</button>
+        </div>
+    </div>
+
+    <!-- Modal Medicamentos Próximos a Vencer -->
+    <div id="modalProximosVencer" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-[400] p-4">
+        <div class="bg-white rounded-2xl w-full max-w-sm md:max-w-md shadow-2xl overflow-hidden">
+            <div class="bg-red-600 p-5 text-white flex justify-between items-center">
+                <h2 class="font-bold flex items-center gap-2 text-lg">
+                    <i class="fas fa-clock"></i> PRÓXIMOS A VENCER
+                </h2>
+                <button onclick="closeModal('modalProximosVencer')" class="text-2xl hover:text-red-200">&times;</button>
+            </div>
+            
+            <div class="p-6 max-h-[60vh] overflow-y-auto">
+                <div class="mb-4">
+                    <p class="text-gray-600 text-sm mb-3">
+                        <i class="fas fa-info-circle text-red-500 mr-2"></i>
+                        Medicamentos que vencen en los próximos 30 días
+                    </p>
+                </div>
+                
+                <div id="listaProximosVencer" class="space-y-3">
+                    <!-- Lista de medicamentos próximos a vencer se generará aquí -->
+                </div>
+                
+                <div id="sinProximosVencer" class="text-center py-8 hidden">
+                    <i class="fas fa-check-circle text-5xl text-green-400 mb-4"></i>
+                    <p class="text-gray-600 font-medium">¡Excelente!</p>
+                    <p class="text-gray-500 text-sm">No hay medicamentos próximos a vencer</p>
+                </div>
+            </div>
+            
+            <div class="bg-gray-50 p-4 border-t border-gray-200">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">
+                        <span id="contadorProximos" class="font-bold">0</span> medicamentos
+                    </span>
+                    <div class="flex gap-2">
+                        <button onclick="exportarPDFProximos()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                            <i class="fas fa-file-pdf mr-2"></i>PDF
+                        </button>
+                        <button onclick="closeModal('modalProximosVencer')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Medicamentos a Reponer -->
+    <div id="modalMedicamentosReponer" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-[500] p-4">
+        <div class="bg-white rounded-2xl w-full max-w-sm md:max-w-md shadow-2xl overflow-hidden">
+            <div class="bg-yellow-600 p-5 text-white flex justify-between items-center">
+                <h2 class="font-bold flex items-center gap-2 text-lg">
+                    <i class="fas fa-syringe"></i> STOCK BAJO
+                </h2>
+                <button onclick="closeModal('modalMedicamentosReponer')" class="text-2xl hover:text-yellow-200">&times;</button>
+            </div>
+            
+            <div class="p-6 max-h-[60vh] overflow-y-auto">
+                <div class="mb-4">
+                    <p class="text-gray-600 text-sm mb-3">
+                        <i class="fas fa-info-circle text-yellow-500 mr-2"></i>
+                        Medicamentos con cantidad ≤ 2 unidades
+                    </p>
+                </div>
+                
+                <div id="listaMedicamentosReponer" class="space-y-3">
+                    <!-- Lista de medicamentos a reponer se generará aquí -->
+                </div>
+                
+                <div id="sinMedicamentosReponer" class="text-center py-8 hidden">
+                    <i class="fas fa-check-circle text-5xl text-green-400 mb-4"></i>
+                    <p class="text-gray-600 font-medium">¡Inventario completo!</p>
+                    <p class="text-gray-500 text-sm">No hay medicamentos con bajo stock</p>
+                </div>
+            </div>
+            
+            <div class="bg-gray-50 p-4 border-t border-gray-200">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">
+                        <span id="contadorReponer" class="font-bold">0</span> medicamentos
+                    </span>
+                    <div class="flex gap-2">
+                        <button onclick="exportarPDFReponer()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                            <i class="fas fa-file-pdf mr-2"></i>PDF
+                        </button>
+                        <button onclick="closeModal('modalMedicamentosReponer')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Alerta Visual Roja para Salir -->
+    <div id="modalAlertaSalir" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-[600] p-4">
+        <div class="bg-gradient-to-br from-red-600 to-red-800 text-white rounded-[2.5rem] w-full max-w-xs p-8 text-center alerta-salida border-4 border-red-300 shadow-2xl shadow-red-900/50">
+            <div class="relative">
+                <div class="absolute -top-12 left-1/2 transform -translate-x-1/2">
+                    <div class="bg-red-500 w-24 h-24 rounded-full flex items-center justify-center animate-pulse">
+                        <i class="fas fa-power-off text-4xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-16 space-y-6">
+                <div>
+                    <h2 class="text-3xl font-black mb-2 uppercase tracking-tighter">¡SALIENDO!</h2>
+                    <p class="text-red-100 text-sm mb-2">¿Está seguro que desea cerrar sesión?</p>
+                    <p class="text-red-200/70 text-xs">Se perderá el acceso temporalmente</p>
+                </div>
+                
+                <div class="bg-black/30 rounded-2xl p-4 mb-4">
+                    <div class="flex items-center justify-center gap-3">
+                        <i class="fas fa-user text-red-300"></i>
+                        <span id="emailSalir" class="text-sm font-mono truncate">usuario@ejemplo.com</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="cerrarAlertaSalir()" class="bg-white/20 hover:bg-white/30 text-white py-4 rounded-2xl font-bold uppercase transition-all duration-300 border border-white/30">
+                        <i class="fas fa-times mr-2"></i>Cancelar
+                    </button>
+                    <button onclick="confirmarSalir()" class="bg-white hover:bg-red-50 text-red-700 py-4 rounded-2xl font-black uppercase transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-2xl shadow-white/20">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Salir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD68b-t5OZqDD3klhdtS7S5PWp1Yey81wA",
+  authDomain: "farmacia-hogar.firebaseapp.com",
+  projectId: "farmacia-hogar",
+  storageBucket: "farmacia-hogar.firebasestorage.app",
+  messagingSenderId: "999910817978",
+  appId: "1:999910817978:web:f55ad1d58b885eb8978283"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        
+        // Variables globales
+        let medicamentos = [];
+        let globalCronoInterval;
+        let medicamentosFiltrados = [];
+        
+        // Variables de paginación
+        let paginaActual = 1;
+        let itemsPorPagina = 10;
+        let totalPaginas = 1;
+        
+        // Filtros
+        let filtroCategoria = '';
+        let filtroUbicacion = '';
+        let filtroMedicamento = '';
+        let editandoMedicamentoId = null;
+
+        // Verificar estado de autenticación al cargar
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('currentUserEmail').textContent = user.email;
+                iniciarApp();
+            }
+        });
+
+        // Función para alternar visibilidad de contraseña
+        function togglePassword() {
+            const passwordInput = document.getElementById('loginPassword');
+            const eyeIcon = document.getElementById('eyeIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Función para mostrar error de login
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('loginError');
+            const errorText = document.getElementById('errorText');
+            const loginForm = document.getElementById('loginForm');
+            
+            errorText.textContent = message;
+            errorDiv.classList.remove('hidden');
+            loginForm.classList.add('shake');
+            
+            setTimeout(() => {
+                loginForm.classList.remove('shake');
+            }, 500);
+        }
+
+        // Función de login
+        async function loginUser() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const loginButton = document.getElementById('loginButton');
+            const loginSpinner = document.getElementById('loginSpinner');
+            
+            if (!email || !password) {
+                showLoginError('Por favor complete todos los campos');
+                return;
+            }
+            
+            loginButton.disabled = true;
+            loginSpinner.classList.remove('hidden');
+            loginButton.innerHTML = '<span>VERIFICANDO...</span>';
+            
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                document.getElementById('currentUserEmail').textContent = userCredential.user.email;
+            } catch (error) {
+                let errorMessage = 'Error de autenticación';
+                
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        errorMessage = 'Email inválido';
+                        break;
+                    case 'auth/user-disabled':
+                        errorMessage = 'Usuario deshabilitado';
+                        break;
+                    case 'auth/user-not-found':
+                        errorMessage = 'Usuario no encontrado';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage = 'Contraseña incorrecta';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage = 'Demasiados intentos. Intente más tarde';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                showLoginError(errorMessage);
+                
+                loginButton.disabled = false;
+                loginSpinner.classList.add('hidden');
+                loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i><span>INGRESAR AL SISTEMA</span>';
+            }
+        }
+
+        // Mostrar alerta visual roja para salir
+        function mostrarAlertaSalir() {
+            const userEmail = document.getElementById('currentUserEmail').textContent;
+            document.getElementById('emailSalir').textContent = userEmail;
+            
+            // Agregar efecto de animación cada vez que se abre
+            const modal = document.getElementById('modalAlertaSalir');
+            modal.classList.remove('alerta-salida');
+            void modal.offsetWidth; // Trigger reflow
+            modal.classList.add('alerta-salida');
+            
+            openModal('modalAlertaSalir');
+        }
+
+        // Cerrar alerta de salida
+        function cerrarAlertaSalir() {
+            closeModal('modalAlertaSalir');
+        }
+
+        // Confirmar salida
+        function confirmarSalir() {
+            // Ejecutar logout real
+            auth.signOut().then(() => {
+                document.getElementById('appContent').classList.add('hidden');
+                document.getElementById('appContent').classList.remove('opacity-100');
+                document.getElementById('landing').classList.remove('hidden');
+                
+                // Limpiar formulario de login
+                document.getElementById('loginEmail').value = '';
+                document.getElementById('loginPassword').value = '';
+                document.getElementById('loginError').classList.add('hidden');
+                
+                // Restaurar botón de login
+                const loginButton = document.getElementById('loginButton');
+                const loginSpinner = document.getElementById('loginSpinner');
+                loginButton.disabled = false;
+                loginSpinner.classList.add('hidden');
+                loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i><span>INGRESAR AL SISTEMA</span>';
+                
+                // Cerrar modal de alerta
+                cerrarAlertaSalir();
+            });
+        }
+
+        // Iniciar aplicación después de login exitoso
+        function iniciarApp() {
+            document.getElementById('landing').classList.add('opacity-0');
+            setTimeout(() => {
+                document.getElementById('landing').style.display = 'none';
+                
+                document.getElementById('appContent').classList.remove('hidden');
+                setTimeout(() => {
+                    document.getElementById('appContent').classList.add('opacity-100');
+                    cargarMedicamentosFirebase();
+                }, 50);
+            }, 300);
+        }
+
+        // --- FUNCIONES FIREBASE ---
+        async function cargarMedicamentosFirebase() {
+            try {
+                const snapshot = await db.collection("medicamentos").get();
+                medicamentos = [];
+                snapshot.forEach(doc => {
+                    medicamentos.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                // Llenar selectores
+                llenarSelectorMedicamentos();
+                
+                // Actualizar todo
+                aplicarFiltrosYActualizar();
+                
+                // Escanear vencimientos
+                escanearVencimientos();
+            } catch (error) {
+                console.error("Error cargando medicamentos:", error);
+            }
+        }
+
+        async function guardarMedicamentoFirebase(medicamento) {
+            try {
+                const user = auth.currentUser;
+                if (user) {
+                    medicamento.userId = user.uid;
+                    medicamento.userEmail = user.email;
+                }
+                
+                medicamento.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+                
+                const docRef = await db.collection("medicamentos").add(medicamento);
+                medicamento.firebaseId = docRef.id;
+                return medicamento;
+            } catch (error) {
+                console.error("Error guardando medicamento:", error);
+                throw error;
+            }
+        }
+
+        async function actualizarMedicamentoFirebase(id, medicamento) {
+            try {
+                await db.collection("medicamentos").doc(id).update(medicamento);
+                return true;
+            } catch (error) {
+                console.error("Error actualizando medicamento:", error);
+                throw error;
+            }
+        }
+
+        async function eliminarMedicamentoFirebase(id) {
+            try {
+                await db.collection("medicamentos").doc(id).delete();
+                return true;
+            } catch (error) {
+                console.error("Error eliminando medicamento:", error);
+                return false;
+            }
+        }
+
+        // --- FUNCIONES CORE ---
+        function formatFecha(str) {
+            if(!str) return '-';
+            const [y, m, d] = str.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        function openModal(id) { 
+            document.getElementById(id).classList.remove('hidden'); 
+        }
+        
+        function closeModal(id) { 
+            document.getElementById(id).classList.add('hidden'); 
+        }
+
+        function cerrarModalRegistro() {
+            editandoMedicamentoId = null;
+            document.getElementById('modalTitulo').textContent = 'NUEVO MEDICAMENTO';
+            document.getElementById('btnGuardar').textContent = 'GUARDAR MEDICAMENTO';
+            document.getElementById('btnGuardar').classList.remove('bg-blue-600');
+            document.getElementById('btnGuardar').classList.add('bg-green-600');
+            document.getElementById('medicamentoForm').reset();
+            closeModal('modalRegistro');
+        }
+
+        // Mostrar medicamentos a reponer
+        function mostrarMedicamentosReponer() {
+            const medicamentosReponer = medicamentos.filter(p => {
+                const cantidad = parseInt(p.cantidad) || 0;
+                return cantidad <= 2;
+            });
+            
+            const listaReponer = document.getElementById('listaMedicamentosReponer');
+            const sinReponer = document.getElementById('sinMedicamentosReponer');
+            const contadorReponer = document.getElementById('contadorReponer');
+            
+            contadorReponer.textContent = medicamentosReponer.length;
+            
+            if (medicamentosReponer.length === 0) {
+                listaReponer.classList.add('hidden');
+                sinReponer.classList.remove('hidden');
+            } else {
+                listaReponer.classList.remove('hidden');
+                sinReponer.classList.add('hidden');
+                
+                listaReponer.innerHTML = medicamentosReponer.map(p => {
+                    const cantidad = parseInt(p.cantidad) || 0;
+                    let nivelUrgencia = '';
+                    let colorFondo = '';
+                    
+                    if (cantidad === 1) {
+                        nivelUrgencia = 'CRÍTICO';
+                        colorFondo = 'bg-red-50 border-red-200';
+                    } else if (cantidad === 2) {
+                        nivelUrgencia = 'BAJO';
+                        colorFondo = 'bg-yellow-50 border-yellow-200';
+                    }
+                    
+                    return `
+                    <div class="border rounded-xl p-4 hover:bg-gray-50 transition-colors cursor-pointer ${colorFondo}" onclick="mostrarDetalle('${p.id}'); closeModal('modalMedicamentosReponer')">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-gray-800">${p.nombre}</span>
+                                    <span class="text-xs px-2 py-1 rounded ${p.categoria === 'Analgésico' ? 'bg-blue-100 text-blue-700' : p.categoria === 'Antibiótico' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}">
+                                        ${p.categoria}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-4 mt-2 text-sm">
+                                    <span class="${cantidad === 1 ? 'text-red-600' : 'text-yellow-600'} font-bold">
+                                        <i class="fas ${cantidad === 1 ? 'fa-exclamation-circle' : 'fa-exclamation-triangle'} ${cantidad === 1 ? 'text-red-500' : 'text-yellow-500'} mr-1"></i>
+                                        ${nivelUrgencia} - ${cantidad} UNIDADES
+                                    </span>
+                                    <span class="text-gray-600">
+                                        <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>
+                                        ${p.ubicacion}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="${cantidad === 1 ? 'text-red-600' : 'text-yellow-600'} font-bold text-lg">${cantidad}</div>
+                                <div class="text-xs text-gray-500 mt-1">unidad${cantidad !== 1 ? 'es' : ''}</div>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+            }
+            
+            openModal('modalMedicamentosReponer');
+        }
+
+        // Función para mostrar medicamentos próximos a vencer
+        function mostrarProximosVencer() {
+            const hoy = new Date();
+            const medicamentosProximos = medicamentos.filter(p => {
+                if (!p.vencimiento) return false;
+                const fechaVencimiento = new Date(p.vencimiento);
+                const diffDias = Math.ceil((fechaVencimiento - hoy) / (1000 * 60 * 60 * 24));
+                return diffDias <= 30 && diffDias >= 0;
+            });
+            
+            const listaProximos = document.getElementById('listaProximosVencer');
+            const sinProximos = document.getElementById('sinProximosVencer');
+            const contadorProximos = document.getElementById('contadorProximos');
+            
+            contadorProximos.textContent = medicamentosProximos.length;
+            
+            if (medicamentosProximos.length === 0) {
+                listaProximos.classList.add('hidden');
+                sinProximos.classList.remove('hidden');
+            } else {
+                listaProximos.classList.remove('hidden');
+                sinProximos.classList.add('hidden');
+                
+                listaProximos.innerHTML = medicamentosProximos.map(p => {
+                    const fechaVencimiento = new Date(p.vencimiento);
+                    const diffDias = Math.ceil((fechaVencimiento - hoy) / (1000 * 60 * 60 * 24));
+                    
+                    let colorDias = 'text-green-600';
+                    if (diffDias <= 7) colorDias = 'text-red-600 font-bold';
+                    else if (diffDias <= 14) colorDias = 'text-orange-600 font-bold';
+                    else if (diffDias <= 21) colorDias = 'text-yellow-600';
+                    
+                    let textoDias = '';
+                    if (diffDias === 0) textoDias = 'Hoy';
+                    else if (diffDias === 1) textoDias = 'Mañana';
+                    else if (diffDias <= 7) textoDias = `${diffDias} días`;
+                    else if (diffDias <= 14) textoDias = `${diffDias} días`;
+                    else textoDias = `${diffDias} días`;
+                    
+                    return `
+                    <div class="border border-gray-200 rounded-xl p-4 hover:bg-red-50 transition-colors cursor-pointer" onclick="mostrarDetalle('${p.id}'); closeModal('modalProximosVencer')">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-gray-800">${p.nombre}</span>
+                                    <span class="text-xs px-2 py-1 rounded ${p.categoria === 'Analgésico' ? 'bg-blue-100 text-blue-700' : p.categoria === 'Antibiótico' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}">
+                                        ${p.categoria}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-4 mt-2 text-sm">
+                                    <span class="text-gray-600">
+                                        <i class="fas fa-capsules text-gray-400 mr-1"></i>
+                                        ${p.cantidad} unidades
+                                    </span>
+                                    <span class="text-gray-600">
+                                        <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>
+                                        ${p.ubicacion}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="${colorDias} font-bold">${textoDias}</div>
+                                <div class="text-xs text-gray-500 mt-1">${formatFecha(p.vencimiento)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+            }
+            
+            openModal('modalProximosVencer');
+        }
+
+        // Manejo del formulario de medicamento
+        document.getElementById('medicamentoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const m = {
+                nombre: document.getElementById('nombre').value,
+                cantidad: parseInt(document.getElementById('cantidad').value),
+                categoria: document.getElementById('categoria').value,
+                principioActivo: document.getElementById('principioActivo').value || '',
+                ubicacion: document.getElementById('ubicacion').value,
+                farmacia: document.getElementById('farmacia').value,
+                vencimiento: document.getElementById('vencimiento').value,
+                fechaCompra: document.getElementById('fechaCompra').value || new Date().toISOString().split('T')[0],
+                precio: parseFloat(document.getElementById('precio').value) || 0,
+                notas: document.getElementById('notas').value || ''
+            };
+            
+            try {
+                if (editandoMedicamentoId) {
+                    // Actualizar medicamento existente
+                    await actualizarMedicamentoFirebase(editandoMedicamentoId, m);
+                } else {
+                    // Crear nuevo medicamento
+                    await guardarMedicamentoFirebase(m);
+                }
+                
+                await cargarMedicamentosFirebase();
+                cerrarModalRegistro();
+            } catch (error) {
+                alert("Error al guardar el medicamento. Intenta nuevamente.");
+            }
+        });
+
+        // Función para editar medicamento
+        function editarMedicamento(id, e) {
+            e.stopPropagation();
+            const medicamento = medicamentos.find(m => m.id === id);
+            if (!medicamento) return;
+            
+            editandoMedicamentoId = id;
+            
+            // Llenar formulario con datos del medicamento
+            document.getElementById('nombre').value = medicamento.nombre;
+            document.getElementById('cantidad').value = medicamento.cantidad;
+            document.getElementById('categoria').value = medicamento.categoria;
+            document.getElementById('principioActivo').value = medicamento.principioActivo || '';
+            document.getElementById('ubicacion').value = medicamento.ubicacion;
+            document.getElementById('farmacia').value = medicamento.farmacia;
+            document.getElementById('vencimiento').value = medicamento.vencimiento;
+            document.getElementById('fechaCompra').value = medicamento.fechaCompra || '';
+            document.getElementById('precio').value = medicamento.precio || '';
+            document.getElementById('notas').value = medicamento.notas || '';
+            
+            // Cambiar texto del modal
+            document.getElementById('modalTitulo').textContent = 'EDITAR MEDICAMENTO';
+            document.getElementById('btnGuardar').textContent = 'ACTUALIZAR MEDICAMENTO';
+            document.getElementById('btnGuardar').classList.remove('bg-green-600');
+            document.getElementById('btnGuardar').classList.add('bg-blue-600');
+            
+            openModal('modalRegistro');
+        }
+
+        async function eliminarM(id, e) {
+            e.stopPropagation();
+            if(confirm('¿Eliminar medicamento del inventario?')) {
+                const success = await eliminarMedicamentoFirebase(id);
+                if (success) {
+                    await cargarMedicamentosFirebase();
+                } else {
+                    alert("Error al eliminar el medicamento.");
+                }
+            }
+        }
+
+        // --- PAGINACIÓN ---
+        function actualizarTabla() {
+            const body = document.getElementById('medicamentoTableBody');
+            
+            // Calcular índices para la página actual
+            const inicio = (paginaActual - 1) * itemsPorPagina;
+            const fin = inicio + itemsPorPagina;
+            const medicamentosPaginados = medicamentosFiltrados.slice(inicio, fin);
+            
+            // Actualizar información de paginación
+            document.getElementById('paginacionDesde').textContent = medicamentosFiltrados.length > 0 ? inicio + 1 : 0;
+            document.getElementById('paginacionHasta').textContent = Math.min(fin, medicamentosFiltrados.length);
+            document.getElementById('paginacionTotal').textContent = medicamentosFiltrados.length;
+            
+            // Generar filas de la tabla
+            body.innerHTML = medicamentosPaginados.map(m => {
+                const cantidad = parseInt(m.cantidad) || 0;
+                const tieneBajoStock = cantidad <= 2;
+                const tieneStockCritico = cantidad === 1;
+                
+                // Determinar clase CSS según nivel de stock
+                let claseFila = 'hover:bg-green-50 cursor-pointer transition-all';
+                if (tieneStockCritico) {
+                    claseFila += ' critico-stock';
+                } else if (tieneBajoStock) {
+                    claseFila += ' bajo-stock';
+                }
+                
+                // Icono de alerta según nivel de stock
+                let iconoAlerta = '';
+                if (tieneStockCritico) {
+                    iconoAlerta = '<i class="fas fa-exclamation-circle text-red-500 ml-2"></i>';
+                } else if (tieneBajoStock) {
+                    iconoAlerta = '<i class="fas fa-exclamation-triangle text-yellow-500 ml-2"></i>';
+                }
+                
+                return `
+                <tr onclick="mostrarDetalle('${m.id}')" class="${claseFila}">
+                    <td class="px-6 py-5 font-black text-gray-800 uppercase text-xs tracking-tighter">
+                        ${m.nombre}
+                        ${iconoAlerta}
+                    </td>
+                    <td class="px-6 py-5 font-mono font-bold">
+                        ${m.cantidad}
+                        ${tieneStockCritico ? '<span class="ml-2 text-xs font-bold text-red-600">¡CRÍTICO!</span>' : 
+                          tieneBajoStock ? '<span class="ml-2 text-xs font-bold text-yellow-600">¡BAJO!</span>' : ''}
+                    </td>
+                    <td class="px-6 py-5">
+                        <span class="text-[10px] font-black px-2 py-1 rounded-md ${m.categoria === 'Analgésico' ? 'bg-blue-100 text-blue-700' : m.categoria === 'Antibiótico' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'} uppercase">
+                            ${m.categoria}
+                        </span>
+                    </td>
+                    <td class="px-6 py-5 font-bold text-red-600 font-mono text-sm">${formatFecha(m.vencimiento)}</td>
+                    <td class="px-6 py-5">
+                        <span class="text-[10px] font-black px-2 py-1 rounded-md ${m.ubicacion === 'Botiquín' ? 'bg-green-100 text-green-700' : m.ubicacion === 'Refrigerador' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'} uppercase">
+                            ${m.ubicacion}
+                        </span>
+                    </td>
+                    <td class="px-6 py-5">
+                        <button onclick="editarMedicamento('${m.id}', event)" class="text-gray-300 hover:text-green-500 transition-colors mr-3">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="eliminarM('${m.id}', event)" class="text-gray-300 hover:text-red-500 transition-colors">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+            
+            // Actualizar controles de paginación
+            actualizarControlesPaginacion();
+        }
+
+        function cambiarPagina(direccion) {
+            if (direccion === 'prev' && paginaActual > 1) {
+                paginaActual--;
+            } else if (direccion === 'next' && paginaActual < totalPaginas) {
+                paginaActual++;
+            } else if (!isNaN(direccion)) {
+                paginaActual = parseInt(direccion);
+            } else if (direccion === '10' || direccion === '25' || direccion === '50') {
+                itemsPorPagina = parseInt(direccion);
+                paginaActual = 1;
+            }
+            
+            actualizarTabla();
+        }
+
+        function actualizarControlesPaginacion() {
+            totalPaginas = Math.ceil(medicamentosFiltrados.length / itemsPorPagina);
+            
+            // Botones anterior/siguiente
+            document.getElementById('paginaAnterior').disabled = paginaActual <= 1;
+            document.getElementById('paginaSiguiente').disabled = paginaActual >= totalPaginas;
+            
+            // Números de página
+            const paginacionNumeros = document.getElementById('paginacionNumeros');
+            paginacionNumeros.innerHTML = '';
+            
+            // Mostrar máximo 5 números de página
+            let inicioPagina = Math.max(1, paginaActual - 2);
+            let finPagina = Math.min(totalPaginas, inicioPagina + 4);
+            
+            // Ajustar si estamos cerca del final
+            if (finPagina - inicioPagina < 4 && inicioPagina > 1) {
+                inicioPagina = Math.max(1, finPagina - 4);
+            }
+            
+            for (let i = inicioPagina; i <= finPagina; i++) {
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-2 rounded-lg ${i === paginaActual ? 'bg-green-600 text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`;
+                btn.textContent = i;
+                btn.onclick = () => cambiarPagina(i);
+                paginacionNumeros.appendChild(btn);
+            }
+        }
+
+        // --- FILTROS ---
+        function llenarSelectorMedicamentos() {
+            const selectorMedicamento = document.getElementById('filtroMedicamento');
+            selectorMedicamento.innerHTML = '<option value="">Todos los medicamentos</option>';
+            
+            // Extraer nombres únicos de medicamentos
+            const nombresUnicos = new Set();
+            medicamentos.forEach(m => {
+                if (m.nombre) {
+                    nombresUnicos.add(m.nombre);
+                }
+            });
+            
+            // Ordenar alfabéticamente
+            Array.from(nombresUnicos).sort((a, b) => a.localeCompare(b)).forEach(nombre => {
+                const option = document.createElement('option');
+                option.value = nombre;
+                option.textContent = nombre;
+                selectorMedicamento.appendChild(option);
+            });
+        }
+
+        function aplicarFiltros() {
+            filtroCategoria = document.getElementById('filtroCategoria').value;
+            filtroUbicacion = document.getElementById('filtroUbicacion').value;
+            filtroMedicamento = document.getElementById('filtroMedicamento').value;
+            aplicarFiltrosYActualizar();
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('filtroCategoria').value = '';
+            document.getElementById('filtroUbicacion').value = '';
+            document.getElementById('filtroMedicamento').value = '';
+            filtroCategoria = '';
+            filtroUbicacion = '';
+            filtroMedicamento = '';
+            aplicarFiltrosYActualizar();
+        }
+
+        function aplicarFiltrosYActualizar() {
+            // Aplicar filtro de búsqueda
+            const terminoBusqueda = document.getElementById('searchInput').value.toLowerCase();
+            
+            // Filtrar medicamentos
+            medicamentosFiltrados = medicamentos.filter(m => {
+                // Filtro de búsqueda
+                const coincideBusqueda = terminoBusqueda === '' || 
+                    m.nombre.toLowerCase().includes(terminoBusqueda) || 
+                    m.categoria.toLowerCase().includes(terminoBusqueda) || 
+                    m.principioActivo.toLowerCase().includes(terminoBusqueda) || 
+                    m.ubicacion.toLowerCase().includes(terminoBusqueda) || 
+                    m.farmacia.toLowerCase().includes(terminoBusqueda);
+                
+                // Filtro de categoría
+                let coincideCategoria = true;
+                if (filtroCategoria) {
+                    coincideCategoria = m.categoria === filtroCategoria;
+                }
+                
+                // Filtro de ubicación
+                let coincideUbicacion = true;
+                if (filtroUbicacion) {
+                    coincideUbicacion = m.ubicacion === filtroUbicacion;
+                }
+                
+                // Filtro de medicamento
+                let coincideMedicamento = true;
+                if (filtroMedicamento) {
+                    coincideMedicamento = m.nombre === filtroMedicamento;
+                }
+                
+                return coincideBusqueda && coincideCategoria && coincideUbicacion && coincideMedicamento;
+            });
+            
+            // Volver a la primera página
+            paginaActual = 1;
+            
+            // Actualizar tabla y resumen
+            actualizarTabla();
+            actualizarResumen();
+        }
+
+        // --- RESUMEN ---
+        function actualizarResumen() {
+            let totalMedicamentos = 0;
+            let totalBotiquin = 0;
+            let totalProximos = 0;
+            let totalReponer = 0;
+            
+            const hoy = new Date();
+            
+            medicamentosFiltrados.forEach(m => {
+                const cantidad = parseInt(m.cantidad) || 0;
+                
+                // Sumar cantidades totales
+                totalMedicamentos += cantidad;
+                
+                // Sumar cantidades por ubicación
+                if (m.ubicacion === 'Botiquín') {
+                    totalBotiquin += cantidad;
+                }
+                
+                // Sumar cantidades de medicamentos próximos a vencer (30 días o menos)
+                if (m.vencimiento) {
+                    const fechaVencimiento = new Date(m.vencimiento);
+                    const diffDias = Math.ceil((fechaVencimiento - hoy) / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDias <= 30 && diffDias >= 0) {
+                        totalProximos += cantidad;
+                    }
+                }
+                
+                // Contar medicamentos a reponer (cantidad <= 2)
+                if (cantidad <= 2) {
+                    totalReponer++;
+                }
+            });
+            
+            document.getElementById('totalMedicamentos').textContent = totalMedicamentos;
+            document.getElementById('totalBotiquin').textContent = totalBotiquin;
+            document.getElementById('totalProximos').textContent = totalProximos;
+            document.getElementById('totalReponer').textContent = totalReponer;
+        }
+
+        // --- LÓGICA DETALLE Y CRONÓMETRO ---
+        function mostrarDetalle(id) {
+            const m = medicamentos.find(x => x.id === id);
+            if(!m) return;
+
+            document.getElementById('detNombre').innerText = m.nombre;
+            document.getElementById('detCategoria').innerText = m.categoria + " • " + m.ubicacion;
+            document.getElementById('detCant').innerText = m.cantidad;
+            document.getElementById('detVenc').innerText = formatFecha(m.vencimiento);
+            document.getElementById('detPrincipioActivo').innerText = m.principioActivo || "No especificado";
+            document.getElementById('detPrecio').innerText = m.precio ? "$" + m.precio : "-";
+            document.getElementById('detFarmacia').innerText = m.farmacia;
+            document.getElementById('detUbicacion').innerText = m.ubicacion;
+            document.getElementById('detNotas').innerText = m.notas || "Sin notas adicionales";
+            document.getElementById('detFechaCompra').innerText = formatFecha(m.fechaCompra);
+
+            // Color del banner según categoría
+            const colorCategoria = {
+                'Analgésico': 'bg-blue-600',
+                'Antibiótico': 'bg-red-600',
+                'Antiinflamatorio': 'bg-orange-600',
+                'Antipirético': 'bg-purple-600',
+                'Antialérgico': 'bg-yellow-600',
+                'Digestivo': 'bg-green-600',
+                'Cardiovascular': 'bg-pink-600',
+                'Dermatológico': 'bg-indigo-600',
+                'Otro': 'bg-gray-600'
+            };
+            
+            const colorBanner = colorCategoria[m.categoria] || 'bg-green-600';
+            document.getElementById('detalleBanner').className = `p-8 text-center relative ${colorBanner}`;
+
+            openModal('modalDetalle');
+            
+            const updateDetCrono = () => {
+                const target = new Date(m.vencimiento + "T23:59:59").getTime();
+                const now = new Date().getTime();
+                const diff = target - now;
+
+                if (diff < 0) {
+                    document.getElementById('detCrono').innerHTML = "<div class='col-span-4 text-red-500 font-black animate-pulse'>MEDICAMENTO VENCIDO</div>";
+                    return;
+                }
+
+                const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+                const caja = (num, label) => `
+                    <div class="bg-white/10 p-2 rounded-xl">
+                        <div class="text-2xl font-black">${num}</div>
+                        <div class="text-[8px] uppercase text-white/50">${label}</div>
+                    </div>`;
+                
+                document.getElementById('detCrono').innerHTML = caja(d, 'días') + caja(h, 'hrs') + caja(m, 'min') + caja(s, 'seg');
+            };
+
+            updateDetCrono();
+            globalCronoInterval = setInterval(updateDetCrono, 1000);
+        }
+
+        function closeModalDetalle() {
+            clearInterval(globalCronoInterval);
+            closeModal('modalDetalle');
+        }
+
+        // --- ALERTA 7 DÍAS ANTES ---
+        function escanearVencimientos() {
+            const hoy = new Date();
+            const criticos = medicamentos.filter(m => {
+                const fv = new Date(m.vencimiento);
+                const diff = (fv - hoy) / (1000 * 60 * 60 * 24);
+                return diff <= 7 && diff >= -2;
+            });
+
+            if(criticos.length > 0) {
+                document.getElementById('listaCritica').innerHTML = criticos.map(m => 
+                    `<div class="flex justify-between border-b border-white/10 pb-1">
+                        <span>${m.nombre}</span>
+                        <span class="font-mono">${formatFecha(m.vencimiento)}</span>
+                    </div>`
+                ).join('');
+                openModal('modalAlerta');
+            }
+        }
+
+        // --- EXPORTAR PDF ---
+        function exportarPDF() {
+            if (medicamentosFiltrados.length === 0) {
+                alert('No hay datos para exportar');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('landscape');
+            
+            // Título
+            doc.setFontSize(20);
+            doc.setTextColor(0, 0, 0);
+            doc.text('Reporte de Farmacia Hogar', 14, 15);
+            
+            // Fecha de generación y filtros
+            doc.setFontSize(10);
+            const fecha = new Date().toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            doc.text(`Generado: ${fecha}`, 14, 25);
+            
+            let filtrosTexto = 'Filtros: ';
+            if (filtroMedicamento) filtrosTexto += `Medicamento: ${filtroMedicamento}, `;
+            if (filtroCategoria) filtrosTexto += `Categoría: ${filtroCategoria}, `;
+            if (filtroUbicacion) filtrosTexto += `Ubicación: ${filtroUbicacion}, `;
+            filtrosTexto += `Total medicamentos: ${medicamentosFiltrados.length}`;
+            doc.text(filtrosTexto, 14, 32);
+            
+            // Encabezados de la tabla
+            const headers = [['Medicamento', 'Cantidad', 'Categoría', 'Principio Activo', 'Vencimiento', 'Ubicación', 'Farmacia', 'Precio ($)']];
+            
+            // Datos de la tabla
+            const data = medicamentosFiltrados.map(m => [
+                m.nombre,
+                m.cantidad.toString(),
+                m.categoria,
+                m.principioActivo || '-',
+                formatFecha(m.vencimiento),
+                m.ubicacion,
+                m.farmacia || '-',
+                m.precio ? '$' + parseFloat(m.precio).toFixed(2) : '-'
+            ]);
+            
+            // Generar tabla
+            doc.autoTable({
+                head: headers,
+                body: data,
+                startY: 40,
+                theme: 'grid',
+                headStyles: { 
+                    fillColor: [34, 197, 94], // verde
+                    textColor: 255,
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: {
+                    fillColor: [240, 253, 244]
+                },
+                columnStyles: {
+                    0: { cellWidth: 35 },
+                    1: { cellWidth: 18 },
+                    2: { cellWidth: 25 },
+                    3: { cellWidth: 35 },
+                    4: { cellWidth: 25 },
+                    5: { cellWidth: 25 },
+                    6: { cellWidth: 30 },
+                    7: { cellWidth: 25 }
+                }
+            });
+            
+            // Resumen en el pie
+            const finalY = doc.lastAutoTable.finalY + 15;
+            doc.setFontSize(12);
+            doc.setTextColor(34, 197, 94);
+            doc.text('Resumen:', 14, finalY);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`• Total medicamentos: ${document.getElementById('totalMedicamentos').textContent} unidades`, 14, finalY + 8);
+            doc.text(`• En botiquín: ${document.getElementById('totalBotiquin').textContent} unidades`, 14, finalY + 16);
+            doc.text(`• Próximos a vencer (≤30 días): ${document.getElementById('totalProximos').textContent} unidades`, 14, finalY + 24);
+            doc.text(`• Stock bajo (≤2 unidades): ${document.getElementById('totalReponer').textContent} medicamentos`, 14, finalY + 32);
+            
+            // Número de página
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
+            }
+            
+            // Guardar PDF
+            doc.save(`reporte_farmacia_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        // Exportar PDF de medicamentos a reponer
+        function exportarPDFReponer() {
+            const medicamentosReponer = medicamentos.filter(m => {
+                const cantidad = parseInt(m.cantidad) || 0;
+                return cantidad <= 2;
+            });
+
+            if (medicamentosReponer.length === 0) {
+                alert('No hay medicamentos con stock bajo para exportar');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('portrait');
+            
+            // Título
+            doc.setFontSize(18);
+            doc.setTextColor(0, 0, 0);
+            doc.text('Lista de Medicamentos con Stock Bajo - Farmacia Hogar', 14, 15);
+            
+            // Fecha de generación
+            doc.setFontSize(10);
+            const fecha = new Date().toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            doc.text(`Generado: ${fecha}`, 14, 25);
+            doc.text(`Total medicamentos con stock bajo: ${medicamentosReponer.length}`, 14, 32);
+            
+            // Encabezados de la tabla
+            const headers = [['Medicamento', 'Cantidad', 'Categoría', 'Vencimiento', 'Ubicación', 'Nivel']];
+            
+            // Datos de la tabla
+            const data = medicamentosReponer.map(m => {
+                const cantidad = parseInt(m.cantidad) || 0;
+                let nivel = '';
+                if (cantidad === 1) nivel = 'CRÍTICO';
+                else if (cantidad === 2) nivel = 'BAJO';
+                
+                return [
+                    m.nombre,
+                    m.cantidad.toString(),
+                    m.categoria,
+                    formatFecha(m.vencimiento),
+                    m.ubicacion,
+                    nivel
+                ];
+            });
+            
+            // Generar tabla
+            doc.autoTable({
+                head: headers,
+                body: data,
+                startY: 40,
+                theme: 'grid',
+                headStyles: { 
+                    fillColor: [245, 158, 11], // amarillo
+                    textColor: 0,
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: {
+                    fillColor: [255, 251, 235]
+                },
+                columnStyles: {
+                    0: { cellWidth: 50 },
+                    1: { cellWidth: 20 },
+                    2: { cellWidth: 30 },
+                    3: { cellWidth: 30 },
+                    4: { cellWidth: 30 },
+                    5: { cellWidth: 25 }
+                },
+                didDrawCell: function(data) {
+                    // Resaltar celdas según nivel de stock
+                    if (data.column.index === 5 && data.cell.section === 'body') {
+                        const texto = data.cell.text[0];
+                        if (texto === 'CRÍTICO') {
+                            doc.setFillColor(254, 226, 226);
+                            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                            doc.setTextColor(220, 38, 38);
+                            doc.text(texto, data.cell.x + 3, data.cell.y + 7);
+                        } else if (texto === 'BAJO') {
+                            doc.setFillColor(254, 243, 199);
+                            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                            doc.setTextColor(217, 119, 6);
+                            doc.text(texto, data.cell.x + 3, data.cell.y + 7);
+                        }
+                    }
+                }
+            });
+            
+            // Nota especial
+            const finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(9);
+            doc.setTextColor(245, 158, 11);
+            doc.text('Nota: Se recomienda reponer estos medicamentos pronto para mantener stock adecuado.', 14, finalY);
+            
+            // Número de página
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
+            }
+            
+            // Guardar PDF
+            doc.save(`medicamentos_stock_bajo_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        // Exportar PDF de medicamentos próximos a vencer
+        function exportarPDFProximos() {
+            const hoy = new Date();
+            const medicamentosProximos = medicamentos.filter(m => {
+                if (!m.vencimiento) return false;
+                const fechaVencimiento = new Date(m.vencimiento);
+                const diffDias = Math.ceil((fechaVencimiento - hoy) / (1000 * 60 * 60 * 24));
+                return diffDias <= 30 && diffDias >= 0;
+            });
+
+            if (medicamentosProximos.length === 0) {
+                alert('No hay medicamentos próximos a vencer para exportar');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('portrait');
+            
+            // Título
+            doc.setFontSize(18);
+            doc.setTextColor(0, 0, 0);
+            doc.text('Lista de Medicamentos Próximos a Vencer - Farmacia Hogar', 14, 15);
+            
+            // Fecha de generación
+            doc.setFontSize(10);
+            const fecha = new Date().toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            doc.text(`Generado: ${fecha}`, 14, 25);
+            doc.text(`Total medicamentos próximos a vencer: ${medicamentosProximos.length}`, 14, 32);
+            
+            // Encabezados de la tabla
+            const headers = [['Medicamento', 'Cantidad', 'Categoría', 'Vencimiento', 'Días Restantes', 'Ubicación']];
+            
+            // Datos de la tabla
+            const data = medicamentosProximos.map(m => {
+                const fechaVencimiento = new Date(m.vencimiento);
+                const diffDias = Math.ceil((fechaVencimiento - hoy) / (1000 * 60 * 60 * 24));
+                let diasRestantes = diffDias;
+                if (diffDias === 0) diasRestantes = 'HOY';
+                else if (diffDias === 1) diasRestantes = 'MAÑANA';
+                else if (diffDias <= 7) diasRestantes = `${diffDias} días`;
+                else if (diffDias <= 14) diasRestantes = `${diffDias} días`;
+                else diasRestantes = `${diffDias} días`;
+
+                return [
+                    m.nombre,
+                    m.cantidad.toString(),
+                    m.categoria,
+                    formatFecha(m.vencimiento),
+                    diasRestantes,
+                    m.ubicacion
+                ];
+            });
+            
+            // Generar tabla
+            doc.autoTable({
+                head: headers,
+                body: data,
+                startY: 40,
+                theme: 'grid',
+                headStyles: { 
+                    fillColor: [220, 38, 38], // rojo
+                    textColor: 255,
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: {
+                    fillColor: [254, 226, 226]
+                },
+                columnStyles: {
+                    0: { cellWidth: 45 },
+                    1: { cellWidth: 20 },
+                    2: { cellWidth: 25 },
+                    3: { cellWidth: 30 },
+                    4: { cellWidth: 30 },
+                    5: { cellWidth: 30 }
+                },
+                didDrawCell: function(data) {
+                    // Resaltar celdas de "Días Restantes" según la urgencia
+                    if (data.column.index === 4 && data.cell.section === 'body') {
+                        const texto = data.cell.text[0];
+                        if (texto === 'HOY' || texto === 'MAÑANA') {
+                            doc.setFillColor(254, 202, 202);
+                            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                            doc.setTextColor(220, 38, 38);
+                            doc.text(texto, data.cell.x + 3, data.cell.y + 7);
+                        } else if (texto.includes('días')) {
+                            const dias = parseInt(texto);
+                            if (dias <= 7) {
+                                doc.setFillColor(254, 215, 170);
+                                doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                                doc.setTextColor(217, 119, 6);
+                                doc.text(texto, data.cell.x + 3, data.cell.y + 7);
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Leyenda de colores
+            const finalY = doc.lastAutoTable.finalY + 15;
+            doc.setFontSize(9);
+            doc.setTextColor(0, 0, 0);
+            
+            // Cuadro rojo para "HOY" y "MAÑANA"
+            doc.setFillColor(254, 202, 202);
+            doc.rect(14, finalY, 5, 5, 'F');
+            doc.text('Vence hoy/mañana', 22, finalY + 4);
+            
+            // Cuadro naranja para "≤7 días"
+            doc.setFillColor(254, 215, 170);
+            doc.rect(14, finalY + 8, 5, 5, 'F');
+            doc.text('Vence en ≤7 días', 22, finalY + 12);
+            
+            // Número de página
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
+            }
+            
+            // Guardar PDF
+            doc.save(`medicamentos_proximos_vencer_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        // --- EVENT LISTENERS ---
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            aplicarFiltrosYActualizar();
+        });
+
+        document.getElementById('filtroMedicamento').addEventListener('change', (e) => {
+            aplicarFiltrosYActualizar();
+        });
+
+        document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loginUser();
+            }
+        });
+
+        // Inicializar selector de items por página
+        document.getElementById('paginacionSelector').value = itemsPorPagina.toString();
+    </script>
+</body>
+</html>
