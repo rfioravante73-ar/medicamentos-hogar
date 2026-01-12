@@ -50,14 +50,6 @@
             background-color: #3b82f6;
             color: white;
         }
-        .bajo-stock {
-            background: linear-gradient(90deg, #fef3c7 0%, #fde68a 50%, #fbbf24 100%);
-            border-left: 4px solid #f59e0b;
-        }
-        .critico-stock {
-            background: linear-gradient(90deg, #fee2e2 0%, #fecaca 50%, #fca5a5 100%);
-            border-left: 4px solid #ef4444;
-        }
         .card-gradient-health { background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%); }
         .card-gradient-warning { background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%); }
         .card-gradient-danger { background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%); }
@@ -193,14 +185,14 @@
                     </div>
                 </div>
                 
-                <div class="bg-white rounded-2xl shadow-lg border border-yellow-100 p-6 cursor-pointer hover:bg-yellow-50 transition-colors alerta-reponer" onclick="mostrarMedicamentosReponer()">
+                <div class="bg-white rounded-2xl shadow-lg border border-purple-100 p-6 cursor-pointer hover:bg-purple-50 transition-colors" onclick="mostrarVencidos()">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-gray-700 text-sm font-bold uppercase">Stock Bajo</p>
-                            <p id="totalReponer" class="text-3xl font-black text-yellow-600">0</p>
+                            <p class="text-gray-700 text-sm font-bold uppercase">Vencidos</p>
+                            <p id="totalVencidos" class="text-3xl font-black text-purple-600">0</p>
                             <p class="text-xs text-gray-600 mt-1">Click para ver lista</p>
                         </div>
-                        <i class="fas fa-syringe text-4xl text-yellow-300"></i>
+                        <i class="fas fa-skull-crossbones text-4xl text-purple-300"></i>
                     </div>
                 </div>
             </div>
@@ -510,45 +502,45 @@
         </div>
     </div>
 
-    <!-- Modal: Medicamentos a Reponer -->
-    <div id="modalMedicamentosReponer" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-[500] p-4">
+    <!-- Modal: Medicamentos Vencidos -->
+    <div id="modalVencidos" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-[500] p-4">
         <div class="bg-white rounded-2xl w-full max-w-sm md:max-w-md shadow-2xl overflow-hidden">
-            <div class="bg-yellow-600 p-5 text-white flex justify-between items-center">
+            <div class="bg-purple-600 p-5 text-white flex justify-between items-center">
                 <h2 class="font-bold flex items-center gap-2 text-lg">
-                    <i class="fas fa-syringe"></i> STOCK BAJO
+                    <i class="fas fa-skull-crossbones"></i> MEDICAMENTOS VENCIDOS
                 </h2>
-                <button onclick="closeModal('modalMedicamentosReponer')" class="text-2xl hover:text-yellow-200">&times;</button>
+                <button onclick="closeModal('modalVencidos')" class="text-2xl hover:text-purple-200">&times;</button>
             </div>
             
             <div class="p-6 max-h-[60vh] overflow-y-auto">
                 <div class="mb-4">
                     <p class="text-gray-600 text-sm mb-3">
-                        <i class="fas fa-info-circle text-yellow-500 mr-2"></i>
-                        Medicamentos con cantidad ≤ 2 unidades
+                        <i class="fas fa-info-circle text-purple-500 mr-2"></i>
+                        Medicamentos con fecha de vencimiento anterior a hoy
                     </p>
                 </div>
                 
-                <div id="listaMedicamentosReponer" class="space-y-3">
-                    <!-- Lista de medicamentos a reponer se generará aquí -->
+                <div id="listaVencidos" class="space-y-3">
+                    <!-- Lista de medicamentos vencidos se generará aquí -->
                 </div>
                 
-                <div id="sinMedicamentosReponer" class="text-center py-8 hidden">
+                <div id="sinVencidos" class="text-center py-8 hidden">
                     <i class="fas fa-check-circle text-5xl text-green-400 mb-4"></i>
-                    <p class="text-gray-600 font-medium">¡Inventario completo!</p>
-                    <p class="text-gray-500 text-sm">No hay medicamentos con bajo stock</p>
+                    <p class="text-gray-600 font-medium">¡Excelente!</p>
+                    <p class="text-gray-500 text-sm">No hay medicamentos vencidos</p>
                 </div>
             </div>
             
             <div class="bg-gray-50 p-4 border-t border-gray-200">
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">
-                        <span id="contadorReponer" class="font-bold">0</span> medicamentos
+                        <span id="contadorVencidos" class="font-bold">0</span> medicamentos
                     </span>
                     <div class="flex gap-2">
-                        <button onclick="exportarPDFReponer()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                        <button onclick="exportarPDFVencidos()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
                             <i class="fas fa-file-pdf mr-2"></i>PDF
                         </button>
-                        <button onclick="closeModal('modalMedicamentosReponer')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                        <button onclick="closeModal('modalVencidos')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
                             Cerrar
                         </button>
                     </div>
@@ -598,11 +590,11 @@
         // Configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyD68b-t5OZqDD3klhdtS7S5PWp1Yey81wA",
-  authDomain: "farmacia-hogar.firebaseapp.com",
-  projectId: "farmacia-hogar",
-  storageBucket: "farmacia-hogar.firebasestorage.app",
-  messagingSenderId: "999910817978",
-  appId: "1:999910817978:web:f55ad1d58b885eb8978283"
+            authDomain: "farmacia-hogar.firebaseapp.com",
+            projectId: "farmacia-hogar",
+            storageBucket: "farmacia-hogar.firebasestorage.app",
+            messagingSenderId: "999910817978",
+            appId: "1:999910817978:web:f55ad1d58b885eb8978283"
         };
 
         // Inicializar Firebase
@@ -785,6 +777,9 @@
                     });
                 });
                 
+                // Ordenar alfabéticamente por nombre
+                medicamentos.sort((a, b) => a.nombre.localeCompare(b.nombre));
+                
                 // Llenar selectores
                 llenarSelectorMedicamentos();
                 
@@ -862,73 +857,6 @@
             closeModal('modalRegistro');
         }
 
-        // Mostrar medicamentos a reponer
-        function mostrarMedicamentosReponer() {
-            const medicamentosReponer = medicamentos.filter(p => {
-                const cantidad = parseInt(p.cantidad) || 0;
-                return cantidad <= 2;
-            });
-            
-            const listaReponer = document.getElementById('listaMedicamentosReponer');
-            const sinReponer = document.getElementById('sinMedicamentosReponer');
-            const contadorReponer = document.getElementById('contadorReponer');
-            
-            contadorReponer.textContent = medicamentosReponer.length;
-            
-            if (medicamentosReponer.length === 0) {
-                listaReponer.classList.add('hidden');
-                sinReponer.classList.remove('hidden');
-            } else {
-                listaReponer.classList.remove('hidden');
-                sinReponer.classList.add('hidden');
-                
-                listaReponer.innerHTML = medicamentosReponer.map(p => {
-                    const cantidad = parseInt(p.cantidad) || 0;
-                    let nivelUrgencia = '';
-                    let colorFondo = '';
-                    
-                    if (cantidad === 1) {
-                        nivelUrgencia = 'CRÍTICO';
-                        colorFondo = 'bg-red-50 border-red-200';
-                    } else if (cantidad === 2) {
-                        nivelUrgencia = 'BAJO';
-                        colorFondo = 'bg-yellow-50 border-yellow-200';
-                    }
-                    
-                    return `
-                    <div class="border rounded-xl p-4 hover:bg-gray-50 transition-colors cursor-pointer ${colorFondo}" onclick="mostrarDetalle('${p.id}'); closeModal('modalMedicamentosReponer')">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-1">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-bold text-gray-800">${p.nombre}</span>
-                                    <span class="text-xs px-2 py-1 rounded ${p.categoria === 'Analgésico' ? 'bg-blue-100 text-blue-700' : p.categoria === 'Antibiótico' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}">
-                                        ${p.categoria}
-                                    </span>
-                                </div>
-                                <div class="flex items-center gap-4 mt-2 text-sm">
-                                    <span class="${cantidad === 1 ? 'text-red-600' : 'text-yellow-600'} font-bold">
-                                        <i class="fas ${cantidad === 1 ? 'fa-exclamation-circle' : 'fa-exclamation-triangle'} ${cantidad === 1 ? 'text-red-500' : 'text-yellow-500'} mr-1"></i>
-                                        ${nivelUrgencia} - ${cantidad} UNIDADES
-                                    </span>
-                                    <span class="text-gray-600">
-                                        <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>
-                                        ${p.ubicacion}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="${cantidad === 1 ? 'text-red-600' : 'text-yellow-600'} font-bold text-lg">${cantidad}</div>
-                                <div class="text-xs text-gray-500 mt-1">unidad${cantidad !== 1 ? 'es' : ''}</div>
-                            </div>
-                        </div>
-                    </div>
-                    `;
-                }).join('');
-            }
-            
-            openModal('modalMedicamentosReponer');
-        }
-
         // Función para mostrar medicamentos próximos a vencer
         function mostrarProximosVencer() {
             const hoy = new Date();
@@ -1000,6 +928,73 @@
             }
             
             openModal('modalProximosVencer');
+        }
+
+        // Función para mostrar medicamentos vencidos
+        function mostrarVencidos() {
+            const hoy = new Date();
+            const medicamentosVencidos = medicamentos.filter(p => {
+                if (!p.vencimiento) return false;
+                const fechaVencimiento = new Date(p.vencimiento);
+                const diffDias = Math.ceil((fechaVencimiento - hoy) / (1000 * 60 * 60 * 24));
+                return diffDias < 0; // Ya vencieron
+            });
+            
+            const listaVencidos = document.getElementById('listaVencidos');
+            const sinVencidos = document.getElementById('sinVencidos');
+            const contadorVencidos = document.getElementById('contadorVencidos');
+            
+            contadorVencidos.textContent = medicamentosVencidos.length;
+            
+            if (medicamentosVencidos.length === 0) {
+                listaVencidos.classList.add('hidden');
+                sinVencidos.classList.remove('hidden');
+            } else {
+                listaVencidos.classList.remove('hidden');
+                sinVencidos.classList.add('hidden');
+                
+                listaVencidos.innerHTML = medicamentosVencidos.map(p => {
+                    const fechaVencimiento = new Date(p.vencimiento);
+                    const diffDias = Math.ceil((fechaVencimiento - hoy) / (1000 * 60 * 60 * 24));
+                    const diasVencidos = Math.abs(diffDias);
+                    
+                    let textoDias = '';
+                    if (diasVencidos === 0) textoDias = 'Hoy';
+                    else if (diasVencidos === 1) textoDias = '1 día';
+                    else textoDias = `${diasVencidos} días`;
+                    
+                    return `
+                    <div class="border border-red-200 rounded-xl p-4 hover:bg-red-50 transition-colors cursor-pointer" onclick="mostrarDetalle('${p.id}'); closeModal('modalVencidos')">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-gray-800">${p.nombre}</span>
+                                    <span class="text-xs px-2 py-1 rounded ${p.categoria === 'Analgésico' ? 'bg-blue-100 text-blue-700' : p.categoria === 'Antibiótico' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}">
+                                        ${p.categoria}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-4 mt-2 text-sm">
+                                    <span class="text-gray-600">
+                                        <i class="fas fa-capsules text-gray-400 mr-1"></i>
+                                        ${p.cantidad} unidades
+                                    </span>
+                                    <span class="text-gray-600">
+                                        <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>
+                                        ${p.ubicacion}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-red-600 font-bold">VENCIDO</div>
+                                <div class="text-xs text-gray-500 mt-1">${textoDias} | ${formatFecha(p.vencimiento)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+            }
+            
+            openModal('modalVencidos');
         }
 
         // Manejo del formulario de medicamento
@@ -1090,38 +1085,20 @@
             document.getElementById('paginacionHasta').textContent = Math.min(fin, medicamentosFiltrados.length);
             document.getElementById('paginacionTotal').textContent = medicamentosFiltrados.length;
             
-            // Generar filas de la tabla
+            // Generar filas de la tabla (ordenadas alfabéticamente ya desde medicamentosFiltrados)
             body.innerHTML = medicamentosPaginados.map(m => {
                 const cantidad = parseInt(m.cantidad) || 0;
-                const tieneBajoStock = cantidad <= 2;
-                const tieneStockCritico = cantidad === 1;
                 
-                // Determinar clase CSS según nivel de stock
+                // Clase de fila
                 let claseFila = 'hover:bg-green-50 cursor-pointer transition-all';
-                if (tieneStockCritico) {
-                    claseFila += ' critico-stock';
-                } else if (tieneBajoStock) {
-                    claseFila += ' bajo-stock';
-                }
-                
-                // Icono de alerta según nivel de stock
-                let iconoAlerta = '';
-                if (tieneStockCritico) {
-                    iconoAlerta = '<i class="fas fa-exclamation-circle text-red-500 ml-2"></i>';
-                } else if (tieneBajoStock) {
-                    iconoAlerta = '<i class="fas fa-exclamation-triangle text-yellow-500 ml-2"></i>';
-                }
                 
                 return `
                 <tr onclick="mostrarDetalle('${m.id}')" class="${claseFila}">
                     <td class="px-6 py-5 font-black text-gray-800 uppercase text-xs tracking-tighter">
                         ${m.nombre}
-                        ${iconoAlerta}
                     </td>
                     <td class="px-6 py-5 font-mono font-bold">
                         ${m.cantidad}
-                        ${tieneStockCritico ? '<span class="ml-2 text-xs font-bold text-red-600">¡CRÍTICO!</span>' : 
-                          tieneBajoStock ? '<span class="ml-2 text-xs font-bold text-yellow-600">¡BAJO!</span>' : ''}
                     </td>
                     <td class="px-6 py-5">
                         <span class="text-[10px] font-black px-2 py-1 rounded-md ${m.categoria === 'Analgésico' ? 'bg-blue-100 text-blue-700' : m.categoria === 'Antibiótico' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'} uppercase">
@@ -1237,7 +1214,7 @@
             // Aplicar filtro de búsqueda
             const terminoBusqueda = document.getElementById('searchInput').value.toLowerCase();
             
-            // Filtrar medicamentos
+            // Filtrar medicamentos (mantener orden alfabético)
             medicamentosFiltrados = medicamentos.filter(m => {
                 // Filtro de búsqueda
                 const coincideBusqueda = terminoBusqueda === '' || 
@@ -1281,7 +1258,7 @@
             let totalMedicamentos = 0;
             let totalBotiquin = 0;
             let totalProximos = 0;
-            let totalReponer = 0;
+            let totalVencidos = 0;
             
             const hoy = new Date();
             
@@ -1304,18 +1281,18 @@
                     if (diffDias <= 30 && diffDias >= 0) {
                         totalProximos += cantidad;
                     }
-                }
-                
-                // Contar medicamentos a reponer (cantidad <= 2)
-                if (cantidad <= 2) {
-                    totalReponer++;
+                    
+                    // Contar medicamentos vencidos
+                    if (diffDias < 0) {
+                        totalVencidos += cantidad;
+                    }
                 }
             });
             
             document.getElementById('totalMedicamentos').textContent = totalMedicamentos;
             document.getElementById('totalBotiquin').textContent = totalBotiquin;
             document.getElementById('totalProximos').textContent = totalProximos;
-            document.getElementById('totalReponer').textContent = totalReponer;
+            document.getElementById('totalVencidos').textContent = totalVencidos;
         }
 
         // --- LÓGICA DETALLE Y CRONÓMETRO ---
@@ -1491,7 +1468,7 @@
             doc.text(`• Total medicamentos: ${document.getElementById('totalMedicamentos').textContent} unidades`, 14, finalY + 8);
             doc.text(`• En botiquín: ${document.getElementById('totalBotiquin').textContent} unidades`, 14, finalY + 16);
             doc.text(`• Próximos a vencer (≤30 días): ${document.getElementById('totalProximos').textContent} unidades`, 14, finalY + 24);
-            doc.text(`• Stock bajo (≤2 unidades): ${document.getElementById('totalReponer').textContent} medicamentos`, 14, finalY + 32);
+            doc.text(`• Vencidos: ${document.getElementById('totalVencidos').textContent} unidades`, 14, finalY + 32);
             
             // Número de página
             const pageCount = doc.internal.getNumberOfPages();
@@ -1503,118 +1480,6 @@
             
             // Guardar PDF
             doc.save(`reporte_farmacia_${new Date().toISOString().split('T')[0]}.pdf`);
-        }
-
-        // Exportar PDF de medicamentos a reponer
-        function exportarPDFReponer() {
-            const medicamentosReponer = medicamentos.filter(m => {
-                const cantidad = parseInt(m.cantidad) || 0;
-                return cantidad <= 2;
-            });
-
-            if (medicamentosReponer.length === 0) {
-                alert('No hay medicamentos con stock bajo para exportar');
-                return;
-            }
-
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('portrait');
-            
-            // Título
-            doc.setFontSize(18);
-            doc.setTextColor(0, 0, 0);
-            doc.text('Lista de Medicamentos con Stock Bajo - Farmacia Hogar', 14, 15);
-            
-            // Fecha de generación
-            doc.setFontSize(10);
-            const fecha = new Date().toLocaleDateString('es-ES', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            
-            doc.text(`Generado: ${fecha}`, 14, 25);
-            doc.text(`Total medicamentos con stock bajo: ${medicamentosReponer.length}`, 14, 32);
-            
-            // Encabezados de la tabla
-            const headers = [['Medicamento', 'Cantidad', 'Categoría', 'Vencimiento', 'Ubicación', 'Nivel']];
-            
-            // Datos de la tabla
-            const data = medicamentosReponer.map(m => {
-                const cantidad = parseInt(m.cantidad) || 0;
-                let nivel = '';
-                if (cantidad === 1) nivel = 'CRÍTICO';
-                else if (cantidad === 2) nivel = 'BAJO';
-                
-                return [
-                    m.nombre,
-                    m.cantidad.toString(),
-                    m.categoria,
-                    formatFecha(m.vencimiento),
-                    m.ubicacion,
-                    nivel
-                ];
-            });
-            
-            // Generar tabla
-            doc.autoTable({
-                head: headers,
-                body: data,
-                startY: 40,
-                theme: 'grid',
-                headStyles: { 
-                    fillColor: [245, 158, 11], // amarillo
-                    textColor: 0,
-                    fontStyle: 'bold'
-                },
-                alternateRowStyles: {
-                    fillColor: [255, 251, 235]
-                },
-                columnStyles: {
-                    0: { cellWidth: 50 },
-                    1: { cellWidth: 20 },
-                    2: { cellWidth: 30 },
-                    3: { cellWidth: 30 },
-                    4: { cellWidth: 30 },
-                    5: { cellWidth: 25 }
-                },
-                didDrawCell: function(data) {
-                    // Resaltar celdas según nivel de stock
-                    if (data.column.index === 5 && data.cell.section === 'body') {
-                        const texto = data.cell.text[0];
-                        if (texto === 'CRÍTICO') {
-                            doc.setFillColor(254, 226, 226);
-                            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
-                            doc.setTextColor(220, 38, 38);
-                            doc.text(texto, data.cell.x + 3, data.cell.y + 7);
-                        } else if (texto === 'BAJO') {
-                            doc.setFillColor(254, 243, 199);
-                            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
-                            doc.setTextColor(217, 119, 6);
-                            doc.text(texto, data.cell.x + 3, data.cell.y + 7);
-                        }
-                    }
-                }
-            });
-            
-            // Nota especial
-            const finalY = doc.lastAutoTable.finalY + 10;
-            doc.setFontSize(9);
-            doc.setTextColor(245, 158, 11);
-            doc.text('Nota: Se recomienda reponer estos medicamentos pronto para mantener stock adecuado.', 14, finalY);
-            
-            // Número de página
-            const pageCount = doc.internal.getNumberOfPages();
-            for (let i = 1; i <= pageCount; i++) {
-                doc.setPage(i);
-                doc.setFontSize(8);
-                doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
-            }
-            
-            // Guardar PDF
-            doc.save(`medicamentos_stock_bajo_${new Date().toISOString().split('T')[0]}.pdf`);
         }
 
         // Exportar PDF de medicamentos próximos a vencer
@@ -1746,6 +1611,130 @@
             
             // Guardar PDF
             doc.save(`medicamentos_proximos_vencer_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        // Exportar PDF de medicamentos vencidos
+        function exportarPDFVencidos() {
+            const hoy = new Date();
+            const medicamentosVencidos = medicamentos.filter(m => {
+                if (!m.vencimiento) return false;
+                const fechaVencimiento = new Date(m.vencimiento);
+                const diffDias = Math.ceil((fechaVencimiento - hoy) / (1000 * 60 * 60 * 24));
+                return diffDias < 0;
+            });
+
+            if (medicamentosVencidos.length === 0) {
+                alert('No hay medicamentos vencidos para exportar');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('portrait');
+            
+            // Título
+            doc.setFontSize(18);
+            doc.setTextColor(0, 0, 0);
+            doc.text('Lista de Medicamentos Vencidos - Farmacia Hogar', 14, 15);
+            
+            // Fecha de generación
+            doc.setFontSize(10);
+            const fecha = new Date().toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            doc.text(`Generado: ${fecha}`, 14, 25);
+            doc.text(`Total medicamentos vencidos: ${medicamentosVencidos.length}`, 14, 32);
+            
+            // Encabezados de la tabla
+            const headers = [['Medicamento', 'Cantidad', 'Categoría', 'Vencimiento', 'Días Vencidos', 'Ubicación']];
+            
+            // Datos de la tabla
+            const data = medicamentosVencidos.map(m => {
+                const fechaVencimiento = new Date(m.vencimiento);
+                const diffDias = Math.ceil((fechaVencimiento - hoy) / (1000 * 60 * 60 * 24));
+                const diasVencidos = Math.abs(diffDias);
+                
+                let textoDias = '';
+                if (diasVencidos === 0) textoDias = 'Hoy';
+                else if (diasVencidos === 1) textoDias = '1 día';
+                else if (diasVencidos <= 7) textoDias = `${diasVencidos} días`;
+                else if (diasVencidos <= 30) textoDias = `${diasVencidos} días`;
+                else textoDias = `${diasVencidos} días`;
+
+                return [
+                    m.nombre,
+                    m.cantidad.toString(),
+                    m.categoria,
+                    formatFecha(m.vencimiento),
+                    textoDias,
+                    m.ubicacion
+                ];
+            });
+            
+            // Generar tabla
+            doc.autoTable({
+                head: headers,
+                body: data,
+                startY: 40,
+                theme: 'grid',
+                headStyles: { 
+                    fillColor: [147, 51, 234], // púrpura
+                    textColor: 255,
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: {
+                    fillColor: [250, 245, 255]
+                },
+                columnStyles: {
+                    0: { cellWidth: 45 },
+                    1: { cellWidth: 20 },
+                    2: { cellWidth: 25 },
+                    3: { cellWidth: 30 },
+                    4: { cellWidth: 30 },
+                    5: { cellWidth: 30 }
+                },
+                didDrawCell: function(data) {
+                    // Resaltar celdas de "Días Vencidos"
+                    if (data.column.index === 4 && data.cell.section === 'body') {
+                        const texto = data.cell.text[0];
+                        if (texto === 'Hoy' || texto === '1 día') {
+                            doc.setFillColor(254, 202, 202);
+                            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                            doc.setTextColor(220, 38, 38);
+                            doc.text(texto, data.cell.x + 3, data.cell.y + 7);
+                        } else if (texto.includes('días')) {
+                            const dias = parseInt(texto);
+                            if (dias <= 7) {
+                                doc.setFillColor(254, 215, 170);
+                                doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                                doc.setTextColor(217, 119, 6);
+                                doc.text(texto, data.cell.x + 3, data.cell.y + 7);
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Nota especial
+            const finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(9);
+            doc.setTextColor(147, 51, 234);
+            doc.text('Nota: Estos medicamentos han vencido y deben ser desechados según las normas de seguridad.', 14, finalY);
+            
+            // Número de página
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
+            }
+            
+            // Guardar PDF
+            doc.save(`medicamentos_vencidos_${new Date().toISOString().split('T')[0]}.pdf`);
         }
 
         // --- EVENT LISTENERS ---
