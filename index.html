@@ -59,67 +59,85 @@
 <body class="bg-gray-50 min-h-screen font-sans text-gray-900">
 
     <!-- Landing Page con Login -->
-    <div id="landing" class="fixed inset-0 bg-gradient-to-br from-green-50 to-blue-50 flex flex-col items-center justify-center text-gray-800 z-[9999] p-4">
-        <div class="text-center space-y-8 max-w-md w-full">
-            <div class="space-y-2">
-                <h1 class="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-blue-500">FARMACIA HOGAR</h1>
-                <p class="text-gray-600 text-sm">Gestión inteligente de medicamentos familiares</p>
-            </div>
-
-            <!-- Formulario de Login -->
-            <div id="loginForm" class="bg-white/80 backdrop-blur-sm border border-white/40 rounded-2xl p-8 space-y-6 shadow-2xl">
-                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <i class="fas fa-user-md text-green-500"></i> ACCESO AL SISTEMA
-                </h2>
-                
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-sm font-medium text-gray-700 block mb-2">Correo Electrónico</label>
-                        <div class="relative">
-                            <i class="fas fa-envelope absolute left-4 top-3.5 text-gray-500"></i>
-                            <input type="email" id="loginEmail" 
-                                placeholder="usuario@ejemplo.com"
-                                class="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-300 rounded-xl text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all">
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label class="text-sm font-medium text-gray-700 block mb-2">Contraseña</label>
-                        <div class="relative">
-                            <i class="fas fa-key absolute left-4 top-3.5 text-gray-500"></i>
-                            <input type="password" id="loginPassword" 
-                                placeholder="••••••••"
-                                class="w-full pl-12 pr-12 py-3.5 bg-white border border-gray-300 rounded-xl text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all">
-                            <button type="button" onclick="togglePassword()" class="absolute right-4 top-3.5 text-gray-500 hover:text-gray-800">
-                                <i class="fas fa-eye" id="eyeIcon"></i>
-                            </button>
+    <div id="landing" class="fixed inset-0 bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center z-[9999] p-4">
+        <div class="container mx-auto max-w-6xl">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <!-- Contenedor Izquierdo: Imagen -->
+                <div class="flex flex-col items-center justify-center p-4 lg:p-8">
+                    <div class="bg-white/80 backdrop-blur-sm border border-white/40 rounded-3xl p-8 shadow-2xl w-full max-w-lg">
+                        <div class="text-center space-y-6">
+                            <div class="space-y-2">
+                                <h1 class="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-blue-500">FARMACIA HOGAR</h1>
+                                <p class="text-gray-600 text-sm">Gestión inteligente de medicamentos familiares</p>
+                            </div>
+                            <img src="https://github.com/rfioravante73-ar/medicamentos-hogar/blob/main/medicamento.png?raw=true" 
+                                 alt="Farmacia Hogar" 
+                                 class="w-full h-auto rounded-2xl shadow-lg">
+                            <p class="text-gray-500 text-sm mt-4">
+                                <i class="fas fa-heartbeat text-green-500 mr-2"></i>
+                                Controla tus medicamentos, cuida tu salud
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                <div id="loginError" class="hidden bg-red-500/20 border border-red-500/30 rounded-xl p-4 text-red-700 text-sm">
-                    <i class="fas fa-exclamation-triangle mr-2"></i>
-                    <span id="errorText">Credenciales incorrectas</span>
-                </div>
+                <!-- Contenedor Derecho: Login -->
+                <div class="flex flex-col items-center justify-center p-4 lg:p-8">
+                    <div id="loginForm" class="bg-white/80 backdrop-blur-sm border border-white/40 rounded-2xl p-8 space-y-6 shadow-2xl w-full max-w-md">
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <i class="fas fa-user-md text-green-500"></i> ACCESO AL SISTEMA
+                        </h2>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700 block mb-2">Correo Electrónico</label>
+                                <div class="relative">
+                                    <i class="fas fa-envelope absolute left-4 top-3.5 text-gray-500"></i>
+                                    <input type="email" id="loginEmail" 
+                                        placeholder="usuario@ejemplo.com"
+                                        class="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-300 rounded-xl text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="text-sm font-medium text-gray-700 block mb-2">Contraseña</label>
+                                <div class="relative">
+                                    <i class="fas fa-key absolute left-4 top-3.5 text-gray-500"></i>
+                                    <input type="password" id="loginPassword" 
+                                        placeholder="••••••••"
+                                        class="w-full pl-12 pr-12 py-3.5 bg-white border border-gray-300 rounded-xl text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all">
+                                    <button type="button" onclick="togglePassword()" class="absolute right-4 top-3.5 text-gray-500 hover:text-gray-800">
+                                        <i class="fas fa-eye" id="eyeIcon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
 
-                <button onclick="loginUser()" id="loginButton" class="w-full bg-gradient-to-r from-green-600 to-blue-500 hover:from-green-700 hover:to-blue-600 text-white py-4 rounded-xl font-bold text-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-2xl shadow-green-500/30 flex items-center justify-center gap-3">
-                    <i class="fas fa-sign-in-alt"></i>
-                    <span>INGRESAR AL SISTEMA</span>
-                    <i id="loginSpinner" class="fas fa-spinner fa-spin hidden"></i>
-                </button>
+                        <div id="loginError" class="hidden bg-red-500/20 border border-red-500/30 rounded-xl p-4 text-red-700 text-sm">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            <span id="errorText">Credenciales incorrectas</span>
+                        </div>
 
-                <div class="text-center pt-4 border-t border-gray-200">
-                    <p class="text-gray-600 text-sm">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        Acceso restringido a usuarios autorizados
-                    </p>
+                        <button onclick="loginUser()" id="loginButton" class="w-full bg-gradient-to-r from-green-600 to-blue-500 hover:from-green-700 hover:to-blue-600 text-white py-4 rounded-xl font-bold text-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-2xl shadow-green-500/30 flex items-center justify-center gap-3">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span>INGRESAR AL SISTEMA</span>
+                            <i id="loginSpinner" class="fas fa-spinner fa-spin hidden"></i>
+                        </button>
+
+                        <div class="text-center pt-4 border-t border-gray-200">
+                            <p class="text-gray-600 text-sm">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Acceso restringido a usuarios autorizados
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Contenido de la Aplicación (oculto inicialmente) -->
-    <div id="appContent" class="hidden opacity-0 transition-opacity duration-1000">
+    <div id="appContent" class="hidden">
         <header class="bg-white border-b border-gray-200 p-4 sticky top-0 z-40 shadow-sm">
             <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center gap-2">
@@ -621,8 +639,15 @@
         // Verificar estado de autenticación al cargar
         auth.onAuthStateChanged((user) => {
             if (user) {
+                console.log("Usuario autenticado:", user.email);
                 document.getElementById('currentUserEmail').textContent = user.email;
                 iniciarApp();
+            } else {
+                console.log("No hay usuario autenticado");
+                // Asegurarse de que el landing page sea visible
+                document.getElementById('landing').classList.remove('hidden');
+                document.getElementById('landing').style.display = 'flex';
+                document.getElementById('appContent').classList.add('hidden');
             }
         });
 
@@ -675,7 +700,8 @@
             
             try {
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                document.getElementById('currentUserEmail').textContent = userCredential.user.email;
+                console.log("Login exitoso:", userCredential.user.email);
+                // El observador onAuthStateChanged manejará la transición
             } catch (error) {
                 let errorMessage = 'Error de autenticación';
                 
@@ -728,41 +754,29 @@
 
         // Confirmar salida
         function confirmarSalir() {
-            // Ejecutar logout real
             auth.signOut().then(() => {
-                document.getElementById('appContent').classList.add('hidden');
-                document.getElementById('appContent').classList.remove('opacity-100');
-                document.getElementById('landing').classList.remove('hidden');
-                
-                // Limpiar formulario de login
-                document.getElementById('loginEmail').value = '';
-                document.getElementById('loginPassword').value = '';
-                document.getElementById('loginError').classList.add('hidden');
-                
-                // Restaurar botón de login
-                const loginButton = document.getElementById('loginButton');
-                const loginSpinner = document.getElementById('loginSpinner');
-                loginButton.disabled = false;
-                loginSpinner.classList.add('hidden');
-                loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i><span>INGRESAR AL SISTEMA</span>';
-                
-                // Cerrar modal de alerta
-                cerrarAlertaSalir();
+                console.log("Sesión cerrada exitosamente");
+                // El observador onAuthStateChanged manejará la transición
+                closeModal('modalAlertaSalir');
+            }).catch((error) => {
+                console.error("Error al cerrar sesión:", error);
+                closeModal('modalAlertaSalir');
             });
         }
 
         // Iniciar aplicación después de login exitoso
         function iniciarApp() {
-            document.getElementById('landing').classList.add('opacity-0');
-            setTimeout(() => {
-                document.getElementById('landing').style.display = 'none';
-                
-                document.getElementById('appContent').classList.remove('hidden');
-                setTimeout(() => {
-                    document.getElementById('appContent').classList.add('opacity-100');
-                    cargarMedicamentosFirebase();
-                }, 50);
-            }, 300);
+            console.log("Iniciando aplicación...");
+            // Ocultar landing page
+            const landing = document.getElementById('landing');
+            landing.style.display = 'none';
+            
+            // Mostrar aplicación
+            const appContent = document.getElementById('appContent');
+            appContent.classList.remove('hidden');
+            
+            // Cargar datos
+            cargarMedicamentosFirebase();
         }
 
         // --- FUNCIONES FIREBASE ---
@@ -777,6 +791,8 @@
                     });
                 });
                 
+                console.log("Medicamentos cargados:", medicamentos.length);
+                
                 // Ordenar alfabéticamente por nombre
                 medicamentos.sort((a, b) => a.nombre.localeCompare(b.nombre));
                 
@@ -790,6 +806,7 @@
                 escanearVencimientos();
             } catch (error) {
                 console.error("Error cargando medicamentos:", error);
+                alert("Error al cargar medicamentos. Verifica tu conexión.");
             }
         }
 
